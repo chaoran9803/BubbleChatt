@@ -1,51 +1,107 @@
+require('dotenv').config();
+
 const express = require('express');
 const http = require('http');
+const cors = require('cors');
+const { Server } = require('socket.io');
+
+const connectDB = require('./db');
+const { verifyToken } = require('./middleware/auth');
+const Conversation = require('./models/Conversation');
+const Message = require('./models/Message');
+
+const authRoutes = require('./routes/auth');
+const friendsRoutes = require('./routes/friends');
+const conversationsRoutes = require('./routes/conversations');
+
+const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
 
 const app = express();
 const server = http.createServer(app);
 
-const {Server} = require('socket.io');
+app.use(cors({ origin: CLIENT_ORIGIN }));
+app.use(express.json());
 
-app.get('/', (req,res) => {
-    res.send("bubbleChatt server is running");
-})
-
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () =>{
-    console.log(`Server listenting on port ${PORT}`);
-})
-
-
-// socket
-const io = new Server(server, {
-    cors: {
-        origin: 'http://localhost:5173',
-    },
+app.get('/', (req, res) => {
+    res.send('bubbleChatt server is running');
 });
 
-io.on('connection', (socket) => {
-    console.log(`User connected: ${socket.id}`);
+app.use('/auth', authRoutes);
+app.use('/friends', friendsRoutes);
+app.use('/conversations', conversationsRoutes);
 
-    // receiving message
-    socket.on('chat message', (msg) => {
-      io.emit('chat message', {
-        id: Date.now(),
-        text: msg.text,
-        username: msg.username,
-        timestamp: new Date().toISOString(),
-      });
+const io = new Server(server, {
+    cors: { origin: CLIENT_ORIGIN },
+});
+
+// authenticate every socket connection via the JWT issued at login
+io.use((socket, next) => {
+    try {
+        const payload = verifyToken(socket.handshake.auth?.token || '');
+        socket.data.userId = payload.sub;
+        socket.data.username = payload.username;
+        next();
+    } catch {
+        next(new Error('Authentication failed'));
+    }
+});
+
+io.on('connection', async (socket) => {
+    console.log(`User connected: ${socket.data.username} (${socket.id})`);
+
+    // join a room per conversation this user belongs to, so events stay scoped
+    const conversations = await Conversation.find({ members: socket.data.userId }).select('_id');
+    conversations.forEach((c) => socket.join(c._id.toString()));
+
+    socket.on('chat message', async ({ conversationId, text }, ack) => {
+        if (typeof text !== 'string' || !text.trim() || typeof conversationId !== 'string') return;
+
+        const conversation = await Conversation.findOne({ _id: conversationId, members: socket.data.userId });
+        if (!conversation) return; // not a member of this conversation, ignore
+
+        const message = await Message.create({
+            conversation: conversation._id,
+            sender: socket.data.userId,
+            text: text.trim(),
+        });
+        conversation.lastMessage = {
+            text: message.text,
+            sender: socket.data.userId,
+            createdAt: message.createdAt,
+        };
+        await conversation.save();
+
+        io.to(conversationId).emit('chat message', {
+            id: message._id,
+            conversationId,
+            text: message.text,
+            username: socket.data.username,
+            userId: socket.data.userId,
+            createdAt: message.createdAt,
+        });
+        if (typeof ack === 'function') ack({ ok: true });
     });
 
-    // username and join leave notices
-    socket.on('join', (username) => {
-        socket.data.username = username;   // stash data on the socket itself
-        socket.broadcast.emit('system message', `${username} joined the chat`);
+    // let a client join a room for a conversation it just created/opened this session
+    socket.on('join conversation', async (conversationId) => {
+        const conversation = await Conversation.findOne({ _id: conversationId, members: socket.data.userId });
+        if (conversation) socket.join(conversationId);
     });
 
     socket.on('disconnect', () => {
-        console.log(`User disconnected: ${socket.id}`);
-        if (socket.data.username) {
-            socket.broadcast.emit('system message', `${socket.data.username} left`);
-        }
+        console.log(`User disconnected: ${socket.data.username} (${socket.id})`);
     });
 });
+
+const PORT = process.env.PORT || 3000;
+
+connectDB()
+    .then(() => {
+        server.listen(PORT, () => {
+            console.log(`Server listening on port ${PORT}`);
+        });
+    })
+    .catch((err) => {
+        console.error('Failed to connect to MongoDB', err);
+        process.exit(1);
+    });
