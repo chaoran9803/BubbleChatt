@@ -272,3 +272,148 @@
   cursor: not-allowed;
   box-shadow: none;
 }
+
+/* ---------- Header extras ---------- */
+.back-button {
+  border: none;
+  background: none;
+  font-size: 20px;
+  color: var(--text-h);
+  cursor: pointer;
+  padding: 4px 6px;
+}
+
+.logout-button {
+  margin-left: 10px;
+  border: none;
+  background: none;
+  color: var(--text-soft);
+  font-size: 13px;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* ---------- Tabs ---------- */
+.tab-bar {
+  display: flex;
+  gap: 4px;
+  padding: 10px 16px 0;
+  background: var(--panel);
+}
+
+.tab {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  background: none;
+  border-radius: 14px 14px 0 0;
+  color: var(--text-soft);
+  font-family: var(--heading);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.tab-active {
+  color: var(--primary-dark);
+  background: var(--bg);
+}
+
+/* ---------- List screens (Friends / Chats) ---------- */
+.list-screen {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.list-section {
+  background: var(--panel);
+  border-radius: 20px;
+  padding: 16px;
+  box-shadow: var(--shadow-soft);
+}
+
+.list-section h2 {
+  font-size: 15px;
+  margin-bottom: 10px;
+}
+
+.list-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.list-section-header h2 {
+  margin-bottom: 0;
+}
+
+.add-friend-row {
+  display: flex;
+  gap: 8px;
+}
+
+.list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 8px;
+  border-radius: 12px;
+  border: none;
+  background: none;
+  font-size: 15px;
+  color: var(--text-h);
+  text-align: left;
+}
+
+.list-item-button {
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.list-item-button:hover {
+  background: var(--bg);
+}
+
+.list-item-sub {
+  font-size: 12px;
+  color: var(--text-soft);
+  max-width: 60%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.request-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.pill-button {
+  border: none;
+  border-radius: 999px;
+  padding: 8px 16px;
+  background: var(--primary);
+  color: #fff;
+  font-family: var(--heading);
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.pill-button:disabled {
+  background: var(--border);
+  color: var(--text-soft);
+  cursor: not-allowed;
+}
+
+.pill-button-ghost {
+  background: none;
+  color: var(--text-soft);
+  border: 2px solid var(--border);
+}
