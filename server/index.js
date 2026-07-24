@@ -26,32 +26,26 @@ const io = new Server(server, {
 io.on('connection', (socket) => {
     console.log(`User connected: ${socket.id}`);
 
+    // receiving message
+    socket.on('chat message', (msg) => {
+      io.emit('chat message', {
+        id: Date.now(),
+        text: msg.text,
+        username: msg.username,
+        timestamp: new Date().toISOString(),
+      });
+    });
+
+    // username and join leave notices
+    socket.on('join', (username) => {
+        socket.data.username = username;   // stash data on the socket itself
+        socket.broadcast.emit('system message', `${username} joined the chat`);
+    });
+
     socket.on('disconnect', () => {
         console.log(`User disconnected: ${socket.id}`);
+        if (socket.data.username) {
+            socket.broadcast.emit('system message', `${socket.data.username} left`);
+        }
     });
-});
-
-
-// receiving message
-socket.on('chat message', (msg) => {
-  io.emit('chat message', {
-    id: Date.now(),
-    text: msg.text,
-    username: msg.username,
-    timestamp: new Date().toISOString(),
-  });
-});
-
-// username and join leave notices
-io.on('connection', (socket) => {
-  socket.on('join', (username) => {
-    socket.data.username = username;   // stash data on the socket itself
-    socket.broadcast.emit('system message', `${username} joined the chat`);
-  });
-
-  socket.on('disconnect', () => {
-    if (socket.data.username) {
-      socket.broadcast.emit('system message', `${socket.data.username} left`);
-    }
-  });
 });
