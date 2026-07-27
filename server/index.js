@@ -5,11 +5,13 @@ const http = require('http');
 const cors = require('cors');
 const { Server } = require('socket.io');
 
+// models
 const connectDB = require('./db');
 const { verifyToken } = require('./middleware/auth');
 const Conversation = require('./models/Conversation');
 const Message = require('./models/Message');
 
+// routing
 const authRoutes = require('./routes/auth');
 const friendsRoutes = require('./routes/friends');
 const conversationsRoutes = require('./routes/conversations');
@@ -22,8 +24,9 @@ const server = http.createServer(app);
 app.use(cors({ origin: CLIENT_ORIGIN }));
 app.use(express.json());
 
+// check if server is running
 app.get('/', (req, res) => {
-    res.send('bubbleChatt server is running');
+    res.send('Server is running do not worry!!!!');
 });
 
 app.use('/auth', authRoutes);
